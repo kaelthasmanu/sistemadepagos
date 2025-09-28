@@ -1,0 +1,52 @@
+// Prisma schema para el proyecto sistemadepagos
+// Provider: postgresql
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model usuarios {
+  id         Int       @id @default(autoincrement())
+  nombre     String    @db.VarChar(150)
+  email      String    @unique @db.VarChar(255)
+  telefono   String?   @db.VarChar(50)
+  direccion  String?
+  creado_en  DateTime  @default(now()) @db.Timestamptz
+  tarjetas   tarjetas[]
+  pagos      pagos[]
+}
+
+model tarjetas {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int
+  alias      String?  @db.VarChar(100)
+  brand      String?  @db.VarChar(50)
+  last4      String   @db.Char(10)
+  exp_month  Int
+  exp_year   Int
+  token      String?  @db.VarChar(255)
+  creado_en  DateTime @default(now()) @db.Timestamptz
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  pagos   pagos[]
+}
+
+model pagos {
+  id             Int      @id @default(autoincrement())
+  usuario_id     Int
+  tarjeta_id     Int
+  monto          Float
+  currency       String   @db.VarChar(15) @default("USD")
+  status         String   @db.VarChar(50)
+  motivo_rechazo String?
+  transaction_id String?  @db.VarChar(150) @unique
+  creado_en      DateTime @default(now()) @db.Timestamptz
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  tarjeta tarjetas @relation(fields: [tarjeta_id], references: [id], onDelete: Restrict)
+}

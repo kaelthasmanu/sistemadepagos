@@ -1,6 +1,5 @@
 import { Injectable, HttpException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { lastValueFrom } from 'rxjs';
+import axios, { AxiosResponse } from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
@@ -8,7 +7,6 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly httpService: HttpService,
   ) {}
 
   async create(dto: CreatePaymentDto) {
@@ -26,15 +24,18 @@ export class PaymentsService {
       cvv: '000',
     };
 
+    type PaymentServiceResponse = {
+      status: 'approved' | 'rejected' | string;
+      transaction_id?: string | null;
+      message?: string | null;
+    };
+
     try {
-      const resp$ = this.httpService.post(
+      const resp: AxiosResponse<PaymentServiceResponse> = await axios.post(
         pythonUrl,
         payload,
-        {
-          headers: { 'Content-Type': 'application/json' },
-        }
+        { headers: { 'Content-Type': 'application/json' } },
       );
-      const resp = await lastValueFrom(resp$) as { data: any };
       const data = resp.data;
 
       const payment = await this.prisma.pagos.create({
@@ -50,12 +51,16 @@ export class PaymentsService {
       });
 
       return payment;
-    } catch (err) {
-      throw new HttpException('Error calling payment service', 502);
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error calling payment service';
+      throw new HttpException(errMsg, 502);
     }
   }
 
-  async findByUser(usuarioId: number) {
-    return this.prisma.pagos.findMany({ where: { usuario_id: usuarioId }, orderBy: { creado_en: 'desc' } });
+  findByUser(usuarioId: number) {
+    return this.prisma.pagos.findMany({
+      where: { usuario_id: usuarioId },
+      orderBy: { creado_en: 'desc' },
+    });
   }
 }

@@ -29,7 +29,7 @@ CREATE TABLE pagos (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     tarjeta_id INTEGER NOT NULL REFERENCES tarjetas(id) ON DELETE RESTRICT,
-    monto NUMERIC(12,2) NOT NULL CHECK (monto >= 0),
+    monto FLOAT NOT NULL CHECK (monto >= 0),
     currency VARCHAR(10) NOT NULL DEFAULT 'USD',
     status VARCHAR(20) NOT NULL,
     motivo_rechazo TEXT,

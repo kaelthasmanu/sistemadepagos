@@ -1,14 +1,20 @@
-import { Injectable, HttpService, HttpException } from '@nestjs/common';
+import { Injectable, HttpException } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService, private readonly httpService: HttpService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly httpService: HttpService,
+  ) {}
 
   async create(dto: CreatePaymentDto) {
-    const pythonUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:8001/process-payment';
+    const pythonUrl = 
+      process.env.PAYMENT_SERVICE_URL ||
+      'http://localhost:8001/process-payment';
 
     const payload = {
       amount: dto.monto,
@@ -21,8 +27,14 @@ export class PaymentsService {
     };
 
     try {
-      const resp$ = this.httpService.post(pythonUrl, payload, { headers: { 'Content-Type': 'application/json' } });
-      const resp = await lastValueFrom(resp$);
+      const resp$ = this.httpService.post(
+        pythonUrl,
+        payload,
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+      const resp = await lastValueFrom(resp$) as { data: any };
       const data = resp.data;
 
       const payment = await this.prisma.pagos.create({

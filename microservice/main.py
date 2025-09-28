@@ -3,7 +3,7 @@ from typing import Union
 
 from dtos.paymentRequest import PaymentRequest
 from dtos.paymentResponse import PaymentResponse
-from service.payment_service import process_payment as payment_service_process
+from .service.payment_service import process_payment as payment_service_process
 
 
 app = FastAPI()

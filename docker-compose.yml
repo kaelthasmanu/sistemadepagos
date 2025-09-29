@@ -16,3 +16,32 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  microservice:
+    build:
+      context: ./microservice
+      dockerfile: Dockerfile
+    container_name: payment-microservice
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PAYMENT_SERVICE_PORT: "8001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://root:root@auth-db:5432/development?schema=public"
+      PAYMENT_SERVICE_URL: "http://microservice:8001/process-payment"
+    depends_on:
+      db:
+        condition: service_healthy

@@ -2,7 +2,7 @@ import random
 from datetime import datetime
 from typing import Optional
 
-from ..dtos.paymentResponse import PaymentResponse
+from dtos.paymentResponse import PaymentResponse
 
 
 def process_payment(payment) -> PaymentResponse:

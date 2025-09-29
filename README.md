@@ -66,3 +66,104 @@ curl -X POST "http://127.0.0.1:8001/process-payment" \
   -H "Content-Type: application/json" \
   -d '{"amount": 12.5, "currency": "USD", "card_number": "4242424242424242", "cardholder_name": "Test User", "expiry_month": 12, "expiry_year": 2026, "cvv": "123"}'
 ```
+
+## API Node (NestJS) - Instrucciones de inicio y ejecución
+
+Pasos rápidos para instalar, configurar y ejecutar la API NestJS incluida en el proyecto.
+
+Requisitos
+- Node.js 18+ (preferible 20)
+- npm
+- PostgreSQL (o la base de datos que uses)
+- Docker (opcional, para despliegue en contenedor)
+
+1) Entrar al directorio de la API
+```bash
+cd api
+```
+
+2) Instalar dependencias
+```bash
+npm install
+```
+
+3) Variables de entorno
+Crea un archivo `.env` en `api/` (puedes copiar de `.env.example` si existe) con al menos estas variables:
+```
+DATABASE_URL="postgresql://user:pass@host:5432/dbname"
+PORT=3000
+PAYMENT_SERVICE_URL="http://localhost:8001" # URL del microservicio de pagos (opcional)
+JWT_SECRET="tu_secreto_aqui"                # si aplica
+```
+
+4) Generar Prisma Client y ejecutar migraciones (desarrollo)
+```bash
+npx prisma generate
+npx prisma migrate dev --name init
+```
+Para producción, usa:
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+5) Ejecutar en modo desarrollo (hot-reload)
+```bash
+npm run start:dev
+# o
+npm run start
+```
+Por defecto la API escuchará en el puerto definido en `PORT` (por defecto 3000).
+
+6) Ejecutar en producción (build + start)
+```bash
+npm run build
+npm run start:prod
+```
+
+7) Swagger / OpenAPI
+Si la app inicializa Swagger (en `main.ts`), la UI suele estar en:
+```
+http://localhost:3000/api
+```
+Usa esa ruta para probar los endpoints y ver ejemplos.
+
+## Uso con Docker Compose
+
+Pasos para ejecutar el proyecto completo (API Node + microservicio FastAPI + PostgreSQL) usando docker-compose.
+
+Requisitos
+- Docker (o Docker Desktop)
+- docker-compose (si no está incluido en Docker Desktop)
+- 
+1) Levantar los servicios:
+
+```bash
+docker-compose up --build -d
+```
+
+2) Ejecutar migraciones / generar cliente Prisma (si usas Prisma):
+- Migrar (desarrollo)
+```bash
+docker-compose exec api npx prisma migrate dev --name init
+```
+o (producción)
+```bash
+docker-compose exec api npx prisma migrate deploy
+```
+
+1) Comprobar logs y estado
+```bash
+docker-compose logs -f api
+docker-compose ps
+```
+
+1) Parar y limpiar
+```bash
+docker-compose down -v
+```
+
+1) Acceso
+- API (Swagger/OpenAPI): http://localhost:${API_PORT:-3000}/api
+- Microservicio de pagos: http://localhost:${PAYMENT_SERVICE_PORT:-8001}/
+

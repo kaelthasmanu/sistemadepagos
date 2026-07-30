@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Payment processor FastAPI service on AWS Lambda
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  PaymentApprovalRate:
+    Type: Number
+    Default: 0.8
+    MinValue: 0
+    MaxValue: 1
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 10
+    Tracing: Active
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+        PAYMENT_APPROVAL_RATE: !Ref PaymentApprovalRate
+
+Resources:
+  PaymentApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Environment
+
+  PaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: main.handler
+      Description: FastAPI payment processing simulator
+      Events:
+        Root:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PaymentApi
+            Path: /
+            Method: ANY
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PaymentApi
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  ApiUrl:
+    Description: URL base del microservicio
+    Value: !Sub "https://${PaymentApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Environment}"
+  FunctionArn:
+    Description: ARN de la función Lambda
+    Value: !GetAtt PaymentFunction.Arn

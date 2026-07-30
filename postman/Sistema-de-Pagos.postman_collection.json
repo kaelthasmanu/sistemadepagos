@@ -1,0 +1,292 @@
+{
+  "info": {
+    "_postman_id": "90f98fd8-9220-4cee-a0df-b7e0d79b3787",
+    "name": "Sistema de Pagos",
+    "description": "Colección completa para probar la API NestJS y el microservicio FastAPI. Ejecute las solicitudes en orden para reutilizar automáticamente userId y cardId.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('El tiempo de respuesta es menor de 5 segundos', function () {",
+          "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "apiBaseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "microserviceBaseUrl", "value": "http://localhost:8001", "type": "string" },
+    { "key": "userId", "value": "1", "type": "string" },
+    { "key": "cardId", "value": "1", "type": "string" },
+    { "key": "uniqueEmail", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "API NestJS",
+      "item": [
+        {
+          "name": "General",
+          "item": [
+            {
+              "name": "Estado de la API",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{apiBaseUrl}}/", "host": ["{{apiBaseUrl}}"], "path": [""] },
+                "description": "Comprueba que la API NestJS responde."
+              },
+              "response": []
+            },
+            {
+              "name": "Documentación Swagger",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{apiBaseUrl}}/api/docs-json", "host": ["{{apiBaseUrl}}"], "path": ["api", "docs-json"] },
+                "description": "Obtiene el documento OpenAPI generado por NestJS."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Usuarios",
+          "item": [
+            {
+              "name": "Crear usuario",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('uniqueEmail', 'postman.' + Date.now() + '@example.com');"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Usuario creado', function () { pm.response.to.have.status(201); });",
+                      "const body = pm.response.json();",
+                      "pm.expect(body).to.have.property('id');",
+                      "pm.collectionVariables.set('userId', String(body.id));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario Postman\",\n  \"email\": \"{{uniqueEmail}}\",\n  \"telefono\": \"+573001234567\",\n  \"direccion\": \"Calle 10 #20-30, Bogotá\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{apiBaseUrl}}/users", "host": ["{{apiBaseUrl}}"], "path": ["users"] }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar usuarios",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{apiBaseUrl}}/users", "host": ["{{apiBaseUrl}}"], "path": ["users"] }
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener usuario por ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{apiBaseUrl}}/users/{{userId}}", "host": ["{{apiBaseUrl}}"], "path": ["users", "{{userId}}"] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Tarjetas",
+          "item": [
+            {
+              "name": "Registrar tarjeta",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Tarjeta registrada', function () { pm.response.to.have.status(201); });",
+                      "const body = pm.response.json();",
+                      "pm.expect(body).to.have.property('id');",
+                      "pm.collectionVariables.set('cardId', String(body.id));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"usuarioId\": {{userId}},\n  \"alias\": \"Tarjeta Postman\",\n  \"brand\": \"Visa\",\n  \"last4\": \"4242\",\n  \"exp_month\": 12,\n  \"exp_year\": 2030,\n  \"token\": \"tok_postman_4242\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{apiBaseUrl}}/cards", "host": ["{{apiBaseUrl}}"], "path": ["cards"] }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar tarjetas del usuario",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{apiBaseUrl}}/cards/user/{{userId}}", "host": ["{{apiBaseUrl}}"], "path": ["cards", "user", "{{userId}}"] }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Pagos",
+          "item": [
+            {
+              "name": "Pagar con tarjeta registrada",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('Pago procesado', function () { pm.response.to.have.status(201); });"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": {{userId}},\n  \"cardId\": {{cardId}},\n  \"amount\": 125.50,\n  \"currency\": \"USD\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{apiBaseUrl}}/payments", "host": ["{{apiBaseUrl}}"], "path": ["payments"] }
+              },
+              "response": []
+            },
+            {
+              "name": "Pagar con tarjeta nueva",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('Pago procesado', function () { pm.response.to.have.status(201); });"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": {{userId}},\n  \"amount\": 49.99,\n  \"currency\": \"USD\",\n  \"card_number\": \"4242424242424242\",\n  \"cardholder_name\": \"Usuario Postman\",\n  \"expiry_month\": 12,\n  \"expiry_year\": 2030,\n  \"cvv\": \"123\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": { "raw": "{{apiBaseUrl}}/payments", "host": ["{{apiBaseUrl}}"], "path": ["payments"] }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar pagos del usuario",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{apiBaseUrl}}/payments/user/{{userId}}", "host": ["{{apiBaseUrl}}"], "path": ["payments", "user", "{{userId}}"] }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Microservicio FastAPI",
+      "item": [
+        {
+          "name": "Health check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Microservicio saludable', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{microserviceBaseUrl}}/health", "host": ["{{microserviceBaseUrl}}"], "path": ["health"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Documentación OpenAPI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{microserviceBaseUrl}}/openapi.json", "host": ["{{microserviceBaseUrl}}"], "path": ["openapi.json"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Procesar pago directamente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Respuesta válida del procesador', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(['approved', 'rejected']).to.include(body.status);",
+                  "  pm.expect(body.transaction_id).to.match(/^TXN_/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Request-ID", "value": "postman-{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 25.75,\n  \"currency\": \"USD\",\n  \"card_number\": \"4242424242424242\",\n  \"cardholder_name\": \"Usuario Postman\",\n  \"expiry_month\": 12,\n  \"expiry_year\": 2030,\n  \"cvv\": \"123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{microserviceBaseUrl}}/process-payment", "host": ["{{microserviceBaseUrl}}"], "path": ["process-payment"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

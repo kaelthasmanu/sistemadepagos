@@ -25,8 +25,22 @@ export class UsersService {
     }
   }
 
-  async findAll() {
-    return this.prisma.usuarios.findMany();
+  async findAll(page = 1, limit = 10) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+
+    const [data, count] = await this.prisma.$transaction([
+      this.prisma.usuarios.findMany({ skip, take }),
+      this.prisma.usuarios.count(),
+    ]);
+
+    return {
+      data,
+      count,
+      page,
+      limit: take,
+      totalPages: Math.max(1, Math.ceil(count / take)),
+    };
   }
 
   async findOne(id: number) {

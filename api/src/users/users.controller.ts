@@ -4,6 +4,7 @@ import {
   Body,
   Get,
   Param,
+  Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import {
@@ -17,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { User } from './user.entity';
 
 @ApiTags('Usuarios')
@@ -36,8 +38,8 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: 'Listar usuarios' })
   @ApiOkResponse({ type: User, isArray: true })
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query() pagination: PaginationQueryDto) {
+    return this.service.findAll(pagination.page, pagination.limit);
   }
 
   @Get(':id')

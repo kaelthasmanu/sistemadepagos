@@ -28,13 +28,13 @@ export class CardsService {
 
   async findByUser(usuarioId: number) {
     const tarjetas = await this.prisma.tarjetas.findMany({
-      where: { usuario_id: usuarioId }
+      where: { usuario_id: usuarioId },
     });
 
     // Ocultar el token de cada tarjeta
-    return tarjetas.map(tarjeta => ({
+    return tarjetas.map((tarjeta) => ({
       ...tarjeta,
-      token: '***************'
+      token: '***************',
     }));
   }
 }

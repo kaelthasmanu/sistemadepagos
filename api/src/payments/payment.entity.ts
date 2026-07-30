@@ -4,7 +4,8 @@ export class Payment {
   @ApiProperty({ example: 1 }) id: number;
   @ApiProperty({ example: 1 }) usuario_id: number;
   @ApiProperty({ example: 1 }) tarjeta_id: number;
-  @ApiProperty({ example: 125.5 }) monto: number;
+  @ApiProperty({ example: '125.50', description: 'Importe decimal exacto' })
+  monto: string;
   @ApiProperty({ example: 'USD' }) currency: string;
   @ApiProperty({ example: 'approved', enum: ['approved', 'rejected'] })
   status: string;

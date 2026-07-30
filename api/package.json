@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "dev": "nest start --watch",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -34,7 +35,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^0.1.0",
     "@eslint/js": "^9.18.0",
-    "@nestjs/cli": "^6.8.1",
+    "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
@@ -45,7 +46,7 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
-    "jest": "^19.0.2",
+    "jest": "^30.4.2",
     "prettier": "^3.4.2",
     "prisma": "^6.16.2",
     "source-map-support": "^0.5.21",

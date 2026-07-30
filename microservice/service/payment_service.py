@@ -16,7 +16,7 @@ REJECTION_REASONS = (
 
 
 def _approval_rate() -> float:
-    raw_value = os.getenv("PAYMENT_APPROVAL_RATE", "0.8")
+    raw_value = "0.8"
     try:
         rate = float(raw_value)
     except ValueError as exc:

@@ -2,7 +2,7 @@
 // Provider: postgresql
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x", "debian-openssl-1.1.x"]
 }
 
@@ -12,14 +12,14 @@ datasource db {
 }
 
 model usuarios {
-  id         Int       @id @default(autoincrement())
-  nombre     String    @db.VarChar(150)
-  email      String    @unique @db.VarChar(255)
-  telefono   String?   @db.VarChar(50)
-  direccion  String?
-  creado_en  DateTime  @default(now()) @db.Timestamptz
-  tarjetas   tarjetas[]
-  pagos      pagos[]
+  id        Int        @id @default(autoincrement())
+  nombre    String     @db.VarChar(150)
+  email     String     @unique @db.VarChar(255)
+  telefono  String?    @db.VarChar(50)
+  direccion String?
+  creado_en DateTime   @default(now()) @db.Timestamptz
+  tarjetas  tarjetas[]
+  pagos     pagos[]
 }
 
 model tarjetas {
@@ -41,11 +41,11 @@ model pagos {
   id             Int      @id @default(autoincrement())
   usuario_id     Int
   tarjeta_id     Int
-  monto          Float
-  currency       String   @db.VarChar(10) @default("USD")
+  monto          Decimal  @db.Decimal(12, 2)
+  currency       String   @default("USD") @db.VarChar(10)
   status         String   @db.VarChar(20)
   motivo_rechazo String?
-  transaction_id String?  @db.VarChar(150) @unique
+  transaction_id String?  @unique @db.VarChar(150)
   creado_en      DateTime @default(now()) @db.Timestamptz
 
   usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)

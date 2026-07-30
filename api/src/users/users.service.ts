@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 
@@ -7,7 +12,17 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateUserDto) {
-    return this.prisma.usuarios.create({ data: dto });
+    try {
+      return await this.prisma.usuarios.create({ data: dto });
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('El email ya está registrado');
+      }
+      throw error;
+    }
   }
 
   async findAll() {
@@ -15,6 +30,8 @@ export class UsersService {
   }
 
   async findOne(id: number) {
-    return this.prisma.usuarios.findUnique({ where: { id } });
+    const user = await this.prisma.usuarios.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException(`Usuario ${id} no encontrado`);
+    return user;
   }
 }

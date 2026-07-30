@@ -26,10 +26,17 @@ services:
     ports:
       - "8001:8001"
     environment:
-      PAYMENT_SERVICE_PORT: "8001"
+      PORT: "8001"
+      PAYMENT_APPROVAL_RATE: "0.8"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   api:
     build:
@@ -44,4 +51,6 @@ services:
       PAYMENT_SERVICE_URL: "http://microservice:8001/process-payment"
     depends_on:
       db:
+        condition: service_healthy
+      microservice:
         condition: service_healthy

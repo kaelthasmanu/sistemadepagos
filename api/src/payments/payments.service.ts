@@ -1,111 +1,135 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import axios, { AxiosResponse } from 'axios';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import axios, { AxiosError, AxiosResponse } from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
+type PaymentServiceRequest = {
+  amount: number | undefined;
+  currency: string;
+  card_number: string | undefined;
+  cardholder_name: string | undefined;
+  expiry_month: number | undefined;
+  expiry_year: number | undefined;
+  cvv: string | undefined;
+};
+
 @Injectable()
 export class PaymentsService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  private readonly logger = new Logger(PaymentsService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreatePaymentDto) {
-  if (!dto.userId) {
-    throw new BadRequestException('userId is required');
-  }
+    const user = await this.prisma.usuarios.findUnique({
+      where: { id: dto.userId },
+    });
+    if (!user)
+      throw new NotFoundException(`Usuario ${dto.userId} no encontrado`);
 
-  if (!dto.cardId && !this.hasCompleteCardData(dto)) {
-    throw new BadRequestException(
-      'Either cardId or complete card data (card_number, cardholder_name, expiry_month, expiry_year, cvv) is required',
-    );
-  }
-
-  const pythonUrl = process.env.PAYMENT_SERVICE_URL || 'http://localhost:8001/process-payment';
-  
-  console.log('Attempting to connect to:', pythonUrl);
-
-  const amount = dto.amount;
-
-  const payload = this.buildPaymentPayload(dto);
-
-  type PaymentServiceResponse = {
-    status: 'approved' | 'rejected' | string;
-    transaction_id?: string | null;
-    message?: string | null;
-  };
-
-  try {
-    const resp: AxiosResponse<PaymentServiceResponse> = await axios.post(
-      pythonUrl,
-      payload,
-      { 
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
-      },
-    );
-
-    const data = resp.data;
-    let tarjetaId = dto.cardId;
-    
-    if (!tarjetaId && this.hasCompleteCardData(dto)) {
-      const last4 = (dto.card_number ?? '').slice(-4);
-      
-      const nuevaTarjeta = await this.prisma.tarjetas.create({
-        data: {
-          usuario_id: dto.userId,
-          alias: `Tarjeta ${last4}`,
-          brand: this.detectCardBrand(dto.card_number ?? ''),
-          last4: last4,
-          exp_month: dto.expiry_month ?? 1,
-          exp_year: dto.expiry_year ?? 2030,
-        },
+    if (dto.cardId) {
+      const card = await this.prisma.tarjetas.findFirst({
+        where: { id: dto.cardId, usuario_id: dto.userId },
       });
-      tarjetaId = nuevaTarjeta.id;
+      if (!card)
+        throw new BadRequestException(
+          'La tarjeta no existe o no pertenece al usuario',
+        );
     }
 
-    if (typeof tarjetaId !== 'number') {
-      throw new BadRequestException('tarjeta_id is required and must be a number');
-    }
-    if (typeof amount !== 'number') {
-      throw new BadRequestException('amount is required and must be a number');
-    }
+    const pythonUrl =
+      process.env.PAYMENT_SERVICE_URL ||
+      'http://localhost:8001/process-payment';
 
-    const paymentData = {
-      usuario_id: dto.userId,
-      tarjeta_id: tarjetaId,
-      monto: amount,
-      currency: dto.currency || 'USD',
-      status: data.status,
-      transaction_id: data.transaction_id ?? null,
-      motivo_rechazo: data.status === 'rejected' ? data.message : null,
+    const amount = dto.amount ?? dto.monto;
+
+    const payload = this.buildPaymentPayload(dto);
+
+    type PaymentServiceResponse = {
+      status: string;
+      transaction_id?: string | null;
+      message?: string | null;
     };
 
-    const payment = await this.prisma.pagos.create({
-      data: paymentData,
-    });
+    try {
+      const resp: AxiosResponse<PaymentServiceResponse> = await axios.post(
+        pythonUrl,
+        payload,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000,
+        },
+      );
 
-    return payment;
+      const data = resp.data;
+      let tarjetaId = dto.cardId;
 
-  } catch (err: any) {
-    console.error('Payment service error details:', {
-      url: pythonUrl,
-      error: err.message,
-      response: err.response?.data,
-      status: err.response?.status,
-    });
+      if (!tarjetaId && this.hasCompleteCardData(dto)) {
+        const last4 = (dto.card_number ?? '').slice(-4);
 
-    if (err.code === 'ECONNREFUSED') {
-      throw new BadRequestException('Payment service is not available');
+        const nuevaTarjeta = await this.prisma.tarjetas.create({
+          data: {
+            usuario_id: dto.userId,
+            alias: `Tarjeta ${last4}`,
+            brand: this.detectCardBrand(dto.card_number ?? ''),
+            last4: last4,
+            exp_month: dto.expiry_month ?? 1,
+            exp_year: dto.expiry_year ?? 2030,
+          },
+        });
+        tarjetaId = nuevaTarjeta.id;
+      }
+
+      if (typeof tarjetaId !== 'number') {
+        throw new BadRequestException(
+          'tarjeta_id is required and must be a number',
+        );
+      }
+      if (typeof amount !== 'number') {
+        throw new BadRequestException(
+          'amount is required and must be a number',
+        );
+      }
+
+      const paymentData = {
+        usuario_id: dto.userId,
+        tarjeta_id: tarjetaId,
+        monto: amount,
+        currency: dto.currency || 'USD',
+        status: data.status,
+        transaction_id: data.transaction_id ?? null,
+        motivo_rechazo: data.status === 'rejected' ? data.message : null,
+      };
+
+      const payment = await this.prisma.pagos.create({
+        data: paymentData,
+      });
+
+      return payment;
+    } catch (error: unknown) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      )
+        throw error;
+
+      if (axios.isAxiosError(error)) {
+        const axiosError: AxiosError = error;
+        this.logger.error(
+          `Error del procesador de pagos (${pythonUrl}): ${axiosError.message}`,
+        );
+        throw new BadGatewayException(
+          'No fue posible procesar el pago en este momento',
+        );
+      }
+      throw error;
     }
-    
-    if (err.response?.status === 404) {
-      throw new BadRequestException('Payment service endpoint not found');
-    }
-
-    const msg = err?.response?.data || err.message || 'Unknown error';
-    throw new BadRequestException(`Payment processing failed: ${JSON.stringify(msg)}`);
   }
-}
 
   private hasCompleteCardData(dto: CreatePaymentDto): boolean {
     return !!(
@@ -117,10 +141,10 @@ export class PaymentsService {
     );
   }
 
-  private buildPaymentPayload(dto: CreatePaymentDto): any {
+  private buildPaymentPayload(dto: CreatePaymentDto): PaymentServiceRequest {
     if (dto.cardId) {
       return {
-        amount: dto.amount,
+        amount: dto.amount ?? dto.monto,
         currency: dto.currency || 'USD',
         card_number: 'xxxx',
         cardholder_name: 'N/A',
@@ -130,7 +154,7 @@ export class PaymentsService {
       };
     }
     return {
-      amount: dto.amount,
+      amount: dto.amount ?? dto.monto,
       currency: dto.currency || 'USD',
       card_number: dto.card_number,
       cardholder_name: dto.cardholder_name,
@@ -143,7 +167,8 @@ export class PaymentsService {
   private detectCardBrand(cardNumber: string): string {
     if (cardNumber.startsWith('4')) return 'Visa';
     if (cardNumber.startsWith('5')) return 'Mastercard';
-    if (cardNumber.startsWith('34') || cardNumber.startsWith('37')) return 'American Express';
+    if (cardNumber.startsWith('34') || cardNumber.startsWith('37'))
+      return 'American Express';
     if (cardNumber.startsWith('6')) return 'Discover';
     return 'Unknown';
   }

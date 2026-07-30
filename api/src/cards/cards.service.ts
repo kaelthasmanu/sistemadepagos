@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCardDto } from './dto/create-card.dto';
 
@@ -7,6 +7,12 @@ export class CardsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateCardDto) {
+    const user = await this.prisma.usuarios.findUnique({
+      where: { id: dto.usuarioId },
+    });
+    if (!user)
+      throw new NotFoundException(`Usuario ${dto.usuarioId} no encontrado`);
+
     return this.prisma.tarjetas.create({
       data: {
         usuario_id: dto.usuarioId,

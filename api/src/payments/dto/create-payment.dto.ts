@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsIn,
+  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
@@ -16,6 +16,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
+import { Currency } from '../enums/currency.enum';
 
 @ValidatorConstraint({ name: 'hasAmount', async: false })
 export class HasAmountConstraint implements ValidatorConstraintInterface {
@@ -90,11 +91,11 @@ export class CreatePaymentDto {
 
   @ApiPropertyOptional({
     example: 'USD',
-    enum: ['USD', 'EUR', 'MXN', 'COP'],
+    enum: Currency,
     default: 'USD',
   })
   @IsString()
-  @IsIn(['USD', 'EUR', 'MXN', 'COP'])
+  @IsEnum(Currency, { message: 'currency debe ser uno de los siguientes: USD, EUR, MXN, COP' })
   @IsOptional()
   currency = 'USD';
 

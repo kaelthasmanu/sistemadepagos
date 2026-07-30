@@ -8,7 +8,7 @@ RUN apt-get update \
 
 COPY package.json package-lock.json* ./
 
-RUN npm install --no-audit --no-fund --silent
+RUN npm install --no-audit --no-fund
 
 COPY prisma ./prisma
 

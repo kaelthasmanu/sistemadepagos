@@ -33,6 +33,8 @@ htmlcov/
 .coverage
 .tox/
 .pytest_cache/
+.ruff_cache/
+.aws-sam/
 
 # Build
 build/

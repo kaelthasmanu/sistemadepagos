@@ -181,7 +181,6 @@ Variables opcionales:
 | Variable | Descripción | Predeterminado |
 | --- | --- | --- |
 | `PORT` | Puerto usado por el contenedor | `8001` |
-| `PAYMENT_APPROVAL_RATE` | Probabilidad entre `0` y `1` | `0.8` |
 | `LOG_LEVEL` | Nivel de logging | `INFO` |
 
 Validación del proyecto:
